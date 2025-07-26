@@ -1,0 +1,1198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AI Assistant Pro</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --primary: #1db954;
+      --primary-light: #1ed760;
+      --dark-bg: linear-gradient(135deg, #1a2a6c, #2a4d69, #4b86b4);
+      --dark-container: rgba(34, 34, 34, 0.95);
+      --light-bg: linear-gradient(135deg, #f5f7fa, #e4edf9);
+      --light-container: rgba(255, 255, 255, 0.95);
+      --user-bg: linear-gradient(90deg, var(--primary), var(--primary-light));
+      --bot-bg-dark: #333;
+      --bot-bg-light: #e9ecef;
+      --text-dark: #ffffff;
+      --text-light: #333333;
+      --clock-color: #00ff00;
+      --clock-bg: #000;
+      --tab-active: var(--primary);
+      --shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+      --radius: 16px;
+      --transition: all 0.3s ease;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: var(--dark-bg);
+      color: var(--text-dark);
+      min-height: 100vh;
+      transition: var(--transition);
+      overflow-x: hidden;
+    }
+
+    .clock {
+      position: fixed;
+      bottom: 15px;
+      right: 20px;
+      font-family: 'Courier New', monospace;
+      font-size: 22px;
+      font-weight: bold;
+      color: var(--clock-color);
+      background: var(--clock-bg);
+      padding: 12px 22px;
+      border: 2px solid var(--clock-color);
+      border-radius: 12px;
+      z-index: 1000;
+      box-shadow: var(--shadow);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .clock i {
+      color: var(--clock-color);
+    }
+
+    .tab-bar {
+      display: flex;
+      background: linear-gradient(90deg, #1a2a6c, #2a4d69);
+      border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+      padding: 0 15px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    }
+
+    .tab-bar button {
+      flex: 1;
+      padding: 16px;
+      background: transparent;
+      border: none;
+      color: white;
+      font-size: 16px;
+      cursor: pointer;
+      transition: var(--transition);
+      position: relative;
+      overflow: hidden;
+      font-weight: 500;
+    }
+
+    .tab-bar button:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .tab-bar button.active {
+      background: var(--tab-active);
+      font-weight: bold;
+    }
+
+    .tab-bar button.active::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 4px;
+      background: white;
+    }
+
+    .tab-content {
+      display: none;
+      padding: 20px;
+      animation: fadeIn 0.4s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    .container {
+      max-width: 700px;
+      margin: 20px auto;
+      background: var(--dark-container);
+      border-radius: var(--radius);
+      padding: 25px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      transition: var(--transition);
+    }
+
+    #chat {
+      display: flex;
+      flex-direction: column;
+      min-height: 200px;
+      max-height: 400px;
+      overflow-y: auto;
+      margin-bottom: 15px;
+      padding: 10px;
+      border-radius: 12px;
+      background: rgba(50, 50, 50, 0.3);
+      scroll-behavior: smooth;
+    }
+
+    #chat div {
+      margin: 10px 0;
+      padding: 12px 18px;
+      border-radius: 18px;
+      max-width: 85%;
+      font-size: 1rem;
+      word-break: break-word;
+      line-height: 1.5;
+      animation: messageAppear 0.3s ease;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+
+    @keyframes messageAppear {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    #chat .user {
+      background: var(--user-bg);
+      align-self: flex-end;
+      color: white;
+      border-bottom-right-radius: 5px;
+    }
+
+    #chat .bot {
+      background: var(--bot-bg-dark);
+      align-self: flex-start;
+      border-bottom-left-radius: 5px;
+    }
+
+    #chat .system {
+      background: rgba(100, 100, 255, 0.15);
+      align-self: center;
+      text-align: center;
+      font-size: 0.9rem;
+      padding: 8px 15px;
+      color: #aaa;
+    }
+
+    .input-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 15px;
+    }
+
+    input, select, textarea {
+      flex: 1;
+      padding: 12px 15px;
+      border-radius: 10px;
+      border: 1px solid #444;
+      background: rgba(50, 50, 50, 0.7);
+      color: var(--text-dark);
+      font-size: 1rem;
+      transition: var(--transition);
+      box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    input:focus, textarea:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(29, 185, 84, 0.2);
+    }
+
+    button {
+      padding: 12px 18px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: var(--transition);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    #sendBtn {
+      background: #444;
+      color: white;
+      min-width: 90px;
+    }
+
+    #sendBtn:hover {
+      background: var(--primary);
+      transform: translateY(-2px);
+    }
+
+    #micBtn {
+      background: var(--primary);
+      color: white;
+      font-size: 1.2rem;
+      min-width: 50px;
+    }
+
+    #micBtn:hover {
+      background: var(--primary-light);
+      transform: translateY(-2px);
+    }
+
+    #micBtn.listening {
+      animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(29, 185, 84, 0.7); }
+      70% { box-shadow: 0 0 0 10px rgba(29, 185, 84, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(29, 185, 84, 0); }
+    }
+
+    .action-btn {
+      background: #4b86b4;
+      color: white;
+      margin-top: 15px;
+      padding: 12px 20px;
+      width: 100%;
+    }
+
+    .action-btn:hover {
+      background: #63a0c8;
+      transform: translateY(-2px);
+    }
+
+    .feedback-input {
+      width: 100%;
+      background: rgba(50, 50, 50, 0.7);
+      border: 1px solid #444;
+      color: var(--text-dark);
+      border-radius: 10px;
+      padding: 15px;
+      font-family: inherit;
+      resize: vertical;
+      min-height: 120px;
+      transition: var(--transition);
+    }
+
+    .footer {
+      text-align: center;
+      color: #888;
+      padding: 20px 0 10px;
+      font-size: 0.9rem;
+      margin-top: 20px;
+    }
+
+    .settings-item {
+      margin: 20px 0;
+    }
+
+    .settings-item label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 500;
+    }
+
+    .settings-item select {
+      width: 100%;
+      padding: 12px;
+    }
+
+    .command-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 15px;
+      margin-top: 20px;
+    }
+
+    .command-card {
+      background: rgba(50, 50, 50, 0.5);
+      border-radius: 10px;
+      padding: 15px;
+      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
+      transition: var(--transition);
+    }
+
+    .command-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    }
+
+    .command-card h4 {
+      margin: 0 0 10px 0;
+      color: var(--primary);
+    }
+
+    .command-card p {
+      margin: 0;
+      font-size: 0.9rem;
+      color: #aaa;
+    }
+
+    .device-icon {
+      font-size: 2rem;
+      margin-bottom: 10px;
+      color: var(--primary);
+    }
+
+    h2 {
+      color: var(--primary);
+      margin-top: 0;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .power-indicator {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #00ff00;
+      margin-left: 8px;
+      box-shadow: 0 0 8px #00ff00;
+    }
+
+    .device-status {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 15px;
+      background: rgba(50, 50, 50, 0.5);
+      border-radius: 10px;
+      margin: 10px 0;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+
+    .status-info {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .toggle-switch {
+      position: relative;
+      display: inline-block;
+      width: 50px;
+      height: 24px;
+    }
+
+    .toggle-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #ccc;
+      transition: .4s;
+      border-radius: 24px;
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 16px;
+      width: 16px;
+      left: 4px;
+      bottom: 4px;
+      background-color: white;
+      transition: .4s;
+      border-radius: 50%;
+    }
+
+    input:checked + .slider {
+      background-color: var(--primary);
+    }
+
+    input:checked + .slider:before {
+      transform: translateX(26px);
+    }
+
+    .search-results {
+      margin-top: 15px;
+      background: rgba(29, 185, 84, 0.1);
+      border-radius: 10px;
+      padding: 15px;
+      border-left: 4px solid var(--primary);
+    }
+
+    .search-results h4 {
+      margin-top: 0;
+      color: var(--primary);
+    }
+
+    .search-results p {
+      margin: 10px 0;
+      line-height: 1.5;
+    }
+
+    .search-results a {
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .search-results a:hover {
+      text-decoration: underline;
+    }
+
+    .loader {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      border-top-color: var(--primary);
+      animation: spin 1s ease-in-out infinite;
+      margin-left: 10px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    @media (max-width: 768px) {
+      .tab-bar {
+        flex-wrap: wrap;
+      }
+      
+      .tab-bar button {
+        flex: 1 0 45%;
+        padding: 12px;
+        font-size: 14px;
+      }
+      
+      .container {
+        padding: 15px;
+        margin: 10px;
+      }
+      
+      .clock {
+        font-size: 18px;
+        padding: 8px 15px;
+        bottom: 10px;
+        right: 10px;
+      }
+      
+      .command-list {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Scrollbar styling */
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: rgba(200, 200, 200, 0.3);
+      border-radius: 10px;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--primary);
+      border-radius: 10px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--primary-light);
+    }
+  </style>
+</head>
+<body>
+  <!-- Clock Widget -->
+  <div class="clock" id="clock">
+    <i class="fas fa-clock"></i>
+    <span>--:--:--</span>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tab-bar">
+    <button class="tab-button active" onclick="showTab(event, 'ai')">
+      <i class="fas fa-robot"></i> AI Assistant
+    </button>
+    <button class="tab-button" onclick="showTab(event, 'device')">
+      <i class="fas fa-mobile-alt"></i> Device Control
+    </button>
+    <button class="tab-button" onclick="showTab(event, 'settings')">
+      <i class="fas fa-cog"></i> Settings
+    </button>
+    <button class="tab-button" onclick="showTab(event, 'about')">
+      <i class="fas fa-info-circle"></i> About
+    </button>
+  </div>
+
+  <!-- AI Assistant Tab -->
+  <div id="ai" class="tab-content active">
+    <div class="container">
+      <div id="chat">
+        <div class="bot">Hello! I'm your AI assistant. How can I help you today?</div>
+        <div class="bot">Try commands like: "define computer", "search AI", "play music on YouTube", or "what's 15% of 200?"</div>
+      </div>
+      <div class="input-row">
+        <input id="userInput" type="text" placeholder="Ask me anything or control your device..." />
+        <button id="sendBtn" onclick="sendMessage()">
+          <i class="fas fa-paper-plane"></i> Send
+        </button>
+        <button id="micBtn" onclick="toggleListening()">
+          <i class="fas fa-microphone"></i>
+        </button>
+      </div>
+      <button class="action-btn" onclick="clearChat()">
+        <i class="fas fa-broom"></i> New Chat
+      </button>
+      
+      <div class="command-list">
+        <div class="command-card">
+          <div class="device-icon"><i class="fas fa-book"></i></div>
+          <h4>Define</h4>
+          <p>"define [word]" - Get word definitions</p>
+        </div>
+        <div class="command-card">
+          <div class="device-icon"><i class="fas fa-search"></i></div>
+          <h4>Search</h4>
+          <p>"search [topic]" - Get information</p>
+        </div>
+        <div class="command-card">
+          <div class="device-icon"><i class="fas fa-calculator"></i></div>
+          <h4>Math</h4>
+          <p>"3*5+2" - Calculate expressions</p>
+        </div>
+        <div class="command-card">
+          <div class="device-icon"><i class="fab fa-youtube"></i></div>
+          <h4>Play</h4>
+          <p>"play [song] on YouTube" - Play media</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Device Control Tab -->
+  <div id="device" class="tab-content">
+    <div class="container">
+      <h2>Device Control Center <span class="power-indicator"></span></h2>
+      <p>Control your device settings with voice commands or buttons:</p>
+      
+      <div class="device-status">
+        <div class="status-info">
+          <i class="fas fa-wifi fa-2x"></i>
+          <div>
+            <h4>Wi-Fi</h4>
+            <p id="wifi-status">Status: On</p>
+          </div>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" checked onchange="toggleDevice('wifi', this.checked)">
+          <span class="slider"></span>
+        </label>
+      </div>
+      
+      <div class="device-status">
+        <div class="status-info">
+          <i class="fas fa-bluetooth-b fa-2x"></i>
+          <div>
+            <h4>Bluetooth</h4>
+            <p id="bluetooth-status">Status: Off</p>
+          </div>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" onchange="toggleDevice('bluetooth', this.checked)">
+          <span class="slider"></span>
+        </label>
+      </div>
+      
+      <div class="device-status">
+        <div class="status-info">
+          <i class="fas fa-mobile-alt fa-2x"></i>
+          <div>
+            <h4>Mobile Data</h4>
+            <p id="data-status">Status: On</p>
+          </div>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" checked onchange="toggleDevice('data', this.checked)">
+          <span class="slider"></span>
+        </label>
+      </div>
+      
+      <div class="device-status">
+        <div class="status-info">
+          <i class="fas fa-lightbulb fa-2x"></i>
+          <div>
+            <h4>Flashlight</h4>
+            <p id="flash-status">Status: Off</p>
+          </div>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" onchange="toggleDevice('flash', this.checked)">
+          <span class="slider"></span>
+        </label>
+      </div>
+      
+      <div class="command-list">
+        <div class="command-card">
+          <div class="device-icon"><i class="fas fa-microphone"></i></div>
+          <h4>Voice Commands</h4>
+          <p>"Turn on Wi-Fi", "Enable Bluetooth", "Activate flashlight"</p>
+        </div>
+        <div class="command-card">
+          <div class="device-icon"><i class="fas fa-volume-up"></i></div>
+          <h4>Volume Control</h4>
+          <p>"Volume up", "Volume down", "Mute sound"</p>
+        </div>
+        <div class="command-card">
+          <div class="device-icon"><i class="fas fa-sun"></i></div>
+          <h4>Screen & Display</h4>
+          <p>"Brightness up", "Enable dark mode", "Lock screen"</p>
+        </div>
+        <div class="command-card">
+          <div class="device-icon"><i class="fas fa-power-off"></i></div>
+          <h4>Power Management</h4>
+          <p>"Enable battery saver", "Turn on airplane mode"</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings Tab -->
+  <div id="settings" class="tab-content">
+    <div class="container">
+      <h2><i class="fas fa-cog"></i> Settings</h2>
+      
+      <div class="settings-item">
+        <label for="language">Assistant Language:</label>
+        <select id="language" onchange="changeLanguage()">
+          <option value="en">English</option>
+          <option value="ml">Malayalam</option>
+          <option value="hi">Hindi</option>
+          <option value="es">Spanish</option>
+          <option value="fr">French</option>
+        </select>
+      </div>
+      
+      <div class="settings-item">
+        <label for="voice">Voice Assistant:</label>
+        <select id="voice" onchange="changeVoice()">
+          <option value="default">Default Voice</option>
+          <option value="male">Male Voice</option>
+          <option value="female">Female Voice</option>
+        </select>
+      </div>
+      
+      <div class="settings-item">
+        <label>Speech Recognition:</label>
+        <div style="display: flex; gap: 10px; margin-top: 10px;">
+          <button onclick="startListening()" style="flex: 1;">
+            <i class="fas fa-microphone"></i> Enable
+          </button>
+          <button onclick="stopListening()" style="flex: 1; background: #e74c3c;">
+            <i class="fas fa-microphone-slash"></i> Disable
+          </button>
+        </div>
+      </div>
+      
+      <div class="settings-item">
+        <label>Reset Preferences:</label>
+        <button onclick="resetSettings()" class="action-btn" style="background: #e74c3c;">
+          <i class="fas fa-trash-alt"></i> Reset to Defaults
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- About Tab -->
+  <div id="about" class="tab-content">
+    <div class="container">
+      <h2><i class="fas fa-info-circle"></i> About This Assistant</h2>
+      <p>This advanced AI assistant combines artificial intelligence with device control capabilities to provide a seamless user experience.</p>
+      
+      <div style="background: rgba(29, 185, 84, 0.1); padding: 20px; border-radius: 12px; margin: 20px 0;">
+        <h3><i class="fas fa-star"></i> Key Features</h3>
+        <ul style="line-height: 1.8;">
+          <li>Natural language processing for understanding complex commands</li>
+          <li>Device control simulation for Wi-Fi, Bluetooth, flashlight and more</li>
+          <li>Multi-language support including English, Malayalam, and Hindi</li>
+          <li>Voice recognition with real-time feedback</li>
+          <li>Math calculations and web searches</li>
+          <li>Customizable interface with dark/light modes</li>
+        </ul>
+      </div>
+      
+      <h3><i class="fas fa-code"></i> Technical Details</h3>
+      <p>This application was built using modern web technologies:</p>
+      <div style="display: flex; flex-wrap: wrap; gap: 15px; margin: 15px 0;">
+        <div style="background: rgba(86, 61, 124, 0.1); padding: 15px; border-radius: 10px; flex: 1; min-width: 120px;">
+          <h4 style="margin-top: 0; color: #563d7c;">HTML5</h4>
+          <p>Structure and semantics</p>
+        </div>
+        <div style="background: rgba(41, 128, 185, 0.1); padding: 15px; border-radius: 10px; flex: 1; min-width: 120px;">
+          <h4 style="margin-top: 0; color: #2980b9;">CSS3</h4>
+          <p>Styling and animations</p>
+        </div>
+        <div style="background: rgba(231, 76, 60, 0.1); padding: 15px; border-radius: 10px; flex: 1; min-width: 120px;">
+          <h4 style="margin-top: 0; color: #e74c3c;">JavaScript</h4>
+          <p>Logic and interactivity</p>
+        </div>
+        <div style="background: rgba(46, 204, 113, 0.1); padding: 15px; border-radius: 10px; flex: 1; min-width: 120px;">
+          <h4 style="margin-top: 0; color: #2ecc71;">Web APIs</h4>
+          <p>Speech, device, and more</p>
+        </div>
+      </div>
+      
+      <div class="footer">
+        <p>Version 2.5.1 | Last Updated: July 24, 2025</p>
+        <p>© 2025 scerchboy.com | All rights reserved</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">© 2025 scerchboy.com | Advanced AI Assistant</div>
+
+  <!-- Scripts -->
+  <script>
+    // Initialize variables
+    let currentLang = localStorage.getItem("lang") || 'en';
+    let isListening = false;
+    let recognition = null;
+    const deviceStatus = {
+      wifi: true,
+      bluetooth: false,
+      data: true,
+      flash: false
+    };
+    
+    // Digital Clock
+    function updateClock() {
+      const now = new Date();
+      const h = String(now.getHours()).padStart(2, '0');
+      const m = String(now.getMinutes()).padStart(2, '0');
+      const s = String(now.getSeconds()).padStart(2, '0');
+      document.getElementById('clock').innerHTML = `<i class="fas fa-clock"></i> <span>${h}:${m}:${s}</span>`;
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    // Language strings
+    const strings = {
+      en: { 
+        feedbackThanks: "Thank you for your feedback!",
+        commands: "Available commands: /help, define [word], search [topic], turn on [device], play [video] on youtube, math expressions"
+      },
+      ml: { 
+        feedbackThanks: "നിന്റെ അഭിപ്രായത്തിന് നന്ദി!",
+        commands: "ലഭ്യമായ കമാൻഡുകൾ: /help, define [word], search [topic], turn on [device], play [video] on youtube, math expressions"
+      },
+      hi: { 
+        feedbackThanks: "आपकी प्रतिक्रिया के लिए धन्यवाद!",
+        commands: "उपलब्ध कमांड: /help, define [word], search [topic], turn on [device], play [video] on youtube, math expressions"
+      }
+    };
+
+    // Initialize saved settings
+    function initSettings() {
+      document.getElementById("language").value = currentLang;
+    }
+    
+    // Tab navigation
+    function showTab(event, tabId) {
+      document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
+      document.getElementById(tabId).classList.add('active');
+      event.currentTarget.classList.add('active');
+    }
+    
+    // Language change
+    function changeLanguage() {
+      currentLang = document.getElementById("language").value;
+      localStorage.setItem("lang", currentLang);
+      appendMessage(`AI: Language changed to ${getLanguageName(currentLang)}`, "bot");
+    }
+    
+    function getLanguageName(code) {
+      const languages = {
+        en: "English",
+        ml: "Malayalam",
+        hi: "Hindi",
+        es: "Spanish",
+        fr: "French"
+      };
+      return languages[code] || "English";
+    }
+    
+    // Voice change
+    function changeVoice() {
+      const voice = document.getElementById("voice").value;
+      appendMessage(`AI: Voice preference set to ${voice}`, "bot");
+    }
+    
+    // Toggle device status
+    function toggleDevice(device, status) {
+      deviceStatus[device] = status;
+      const statusText = status ? "On" : "Off";
+      document.getElementById(`${device}-status`).textContent = `Status: ${statusText}`;
+      
+      // Add to chat
+      appendMessage(`You: Turn ${status ? "on" : "off"} ${device}`, "user");
+      appendMessage(`AI: ${device.charAt(0).toUpperCase() + device.slice(1)} turned ${status ? "on" : "off"}`, "bot");
+    }
+    
+    // Reset settings
+    function resetSettings() {
+      localStorage.clear();
+      initSettings();
+      appendMessage("AI: All settings have been reset to defaults", "bot");
+    }
+    
+    // Add message to chat
+    function appendMessage(text, sender) {
+      const chat = document.getElementById("chat");
+      const msg = document.createElement("div");
+      msg.className = sender;
+      msg.textContent = text;
+      chat.appendChild(msg);
+      chat.scrollTop = chat.scrollHeight;
+    }
+    
+    // Clear chat
+    function clearChat() {
+      document.getElementById("chat").innerHTML = '';
+      appendMessage("AI: Chat cleared. How can I assist you?", "bot");
+    }
+    
+    // Process commands
+    function processDeviceCommand(cmd) {
+      const actions = {
+        "wifi": {on: "Wi‑Fi turned on", off: "Wi‑Fi turned off"},
+        "wi-fi": {on: "Wi‑Fi turned on", off: "Wi‑Fi turned off"},
+        "bluetooth": {on: "Bluetooth turned on", off: "Bluetooth turned off"},
+        "data": {on: "Mobile data turned on", off: "Mobile data turned off"},
+        "mobile data": {on: "Mobile data turned on", off: "Mobile data turned off"},
+        "gps": {on: "GPS turned on", off: "GPS turned off"},
+        "nfc": {on: "NFC turned on", off: "NFC turned off"},
+        "hotspot": {on: "Hotspot turned on", off: "Hotspot turned off"},
+        "airplane mode": {on: "Airplane mode enabled", off: "Airplane mode disabled"},
+        "do not disturb": {on: "Do not disturb enabled", off: "Do not disturb disabled"},
+        "battery saver": {on: "Battery saver enabled", off: "Battery saver disabled"},
+        "flashlight": {on: "Flashlight turned on", off: "Flashlight turned off"},
+        "torch": {on: "Flashlight turned on", off: "Flashlight turned off"},
+        "auto brightness": {on: "Auto brightness enabled", off: "Auto brightness disabled"},
+        "vibrate": {on: "Vibrate mode enabled", off: "Vibrate mode disabled"},
+        "mute": {on: "Device muted", off: "Device unmuted"},
+        "volume up": {action: "Volume increased"},
+        "volume down": {action: "Volume decreased"},
+        "screen recorder": {action: "Screen recording started"},
+        "camera": {action: "Camera opened"},
+        "microphone": {action: "Microphone accessed"},
+        "lock screen": {action: "Screen locked"},
+        "unlock screen": {action: "Screen unlocked"},
+        "time": {action: "Current time: " + new Date().toLocaleTimeString()},
+        "what time is it": {action: "Current time: " + new Date().toLocaleTimeString()},
+        "check time": {action: "Current time: " + new Date().toLocaleTimeString()},
+        "date": {action: "Today's date: " + new Date().toLocaleDateString()},
+        "what date is it": {action: "Today's date: " + new Date().toLocaleDateString()},
+        "today's date": {action: "Today's date: " + new Date().toLocaleDateString()},
+        "current date": {action: "Today's date: " + new Date().toLocaleDateString()},
+        "cast screen": {action: "Screen casting enabled"}
+      };
+      
+      for (const [key, actionObj] of Object.entries(actions)) {
+        if (cmd.includes(key)) {
+          if (actionObj.action) {
+            return actionObj.action;
+          }
+          
+          if (cmd.includes("on")) {
+            toggleDevice(key, true);
+            return actionObj.on;
+          } else if (cmd.includes("off")) {
+            toggleDevice(key, false);
+            return actionObj.off;
+          }
+          
+          // Toggle if no state specified
+          const device = key.split(" ")[0];
+          const newState = !deviceStatus[device];
+          toggleDevice(device, newState);
+          return newState ? actionObj.on : actionObj.off;
+        }
+      }
+      
+      return null;
+    }
+    
+    // Get local reply for simple queries
+    function getLocalReply(text) {
+      if (/^[\d+\-*/(). ]+$/.test(text)) {
+        try {
+          const result = Function('"use strict";return (' + text + ')')();
+          return isFinite(result) ? `The answer is ${result}.` : "I can't compute that.";
+        } catch (e) {
+          return "I couldn't calculate that expression.";
+        }
+      }
+      
+      const responses = {
+        "hello": "Hello! How can I help you today?",
+        "hi": "Hi there! What can I do for you?",
+        "how are you": "I'm just a bot, but I'm functioning perfectly!",
+        "your name": "I'm your AI assistant. You can call me Alex!",
+        "created you": "I was created using HTML, CSS, and JavaScript.",
+        "thank you": "You're welcome!",
+        "thanks": "Anytime!",
+        "bye": "Goodbye! Have a great day!",
+        "what is ai": "AI stands for Artificial Intelligence - it's the simulation of human intelligence by machines.",
+        "purpose": "My purpose is to assist you with information and device control.",
+        "help": strings[currentLang]?.commands || strings.en.commands,
+        "command": strings[currentLang]?.commands || strings.en.commands,
+        "capital of india": "New Delhi is the capital of India.",
+        "prime minister of india": "Narendra Modi is the Prime Minister of India."
+      };
+      
+      for (const [key, response] of Object.entries(responses)) {
+        if (text.includes(key)) {
+          return response;
+        }
+      }
+      
+      return `I'm still learning! You said: "${text}". Try asking for help with "/help".`;
+    }
+    
+    // Fixed Wikipedia API call with CORS proxy
+    async function fetchWiki(topic, lang = 'en') {
+      try {
+        // Using a CORS proxy to bypass restrictions
+        const proxyUrl = 'https://cors-anywhere.herokuapp.com/';
+        const apiUrl = `https://${lang}.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(topic)}`;
+        
+        const response = await fetch(proxyUrl + apiUrl);
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch data from Wikipedia');
+        }
+        
+        const data = await response.json();
+        return data.extract || null;
+      } catch (error) {
+        console.error('Wikipedia API error:', error);
+        
+        // Fallback to simulated responses
+        const summaries = {
+          "ai": "Artificial intelligence is intelligence demonstrated by machines, as opposed to natural intelligence displayed by animals including humans.",
+          "computer": "A computer is a digital electronic machine that can be programmed to carry out sequences of arithmetic or logical operations automatically.",
+          "india": "India, officially the Republic of India, is a country in South Asia. It is the seventh-largest country by area and the second-most populous country.",
+          "space": "Space is the boundless three-dimensional extent in which objects and events have relative position and direction.",
+          "earth": "Earth is the third planet from the Sun and the only astronomical object known to harbor life.",
+          "physics": "Physics is the natural science that studies matter, its motion and behavior through space and time, and the related entities of energy and force.",
+          "internet": "The Internet is a global system of interconnected computer networks that use the Internet protocol suite to communicate between networks and devices.",
+          "history": "History is the study and documentation of the past, including events before the invention of writing systems.",
+          "biology": "Biology is the scientific study of life and living organisms, including their physical structure, chemical processes, molecular interactions, and development.",
+          "chemistry": "Chemistry is the scientific study of the properties and behavior of matter at the atomic and molecular scale."
+        };
+        
+        return summaries[topic.toLowerCase()] || null;
+      }
+    }
+    
+    // Enhanced search functionality with visual feedback
+    async function handleSearch(query, lang = 'en') {
+      const chat = document.getElementById("chat");
+      
+      // Add searching indicator
+      const searchingMsg = document.createElement("div");
+      searchingMsg.className = "bot";
+      searchingMsg.innerHTML = `AI: Searching for information about <strong>${query}</strong>... <span class="loader"></span>`;
+      chat.appendChild(searchingMsg);
+      chat.scrollTop = chat.scrollHeight;
+      
+      try {
+        const summary = await fetchWiki(query, lang);
+        
+        // Remove the searching indicator
+        chat.removeChild(searchingMsg);
+        
+        if (summary) {
+          // Create the search results container
+          const resultsContainer = document.createElement("div");
+          resultsContainer.className = "search-results";
+          resultsContainer.innerHTML = `
+            <h4>Search Results for: ${query}</h4>
+            <p>${summary}</p>
+            <p>Source: <a href="https://${lang}.wikipedia.org/wiki/${encodeURIComponent(query)}" target="_blank">Wikipedia</a></p>
+          `;
+          
+          // Add to chat
+          appendMessage(`AI: Here's what I found about "${query}":`, "bot");
+          chat.appendChild(resultsContainer);
+          chat.scrollTop = chat.scrollHeight;
+        } else {
+          // Create Google search link
+          const googleSearch = document.createElement("div");
+          googleSearch.className = "search-results";
+          googleSearch.innerHTML = `
+            <h4>Search Results for: ${query}</h4>
+            <p>I couldn't find a summary, but here are some Google results:</p>
+            <p><a href="https://www.google.com/search?q=${encodeURIComponent(query)}" target="_blank">Open Google Search</a></p>
+          `;
+          
+          // Add to chat
+          appendMessage(`AI: I couldn't find a summary for "${query}". Here are some Google results instead.`, "bot");
+          chat.appendChild(googleSearch);
+          chat.scrollTop = chat.scrollHeight;
+        }
+      } catch (error) {
+        console.error('Search error:', error);
+        
+        // Remove the searching indicator
+        chat.removeChild(searchingMsg);
+        
+        // Add error message
+        appendMessage("AI: Sorry, I encountered an error while searching. Please try again later.", "bot");
+      }
+    }
+    
+    // Send message handler
+    async function sendMessage() {
+      const input = document.getElementById("userInput");
+      let text = input.value.trim();
+      if (!text) return;
+      
+      appendMessage("You: " + text, "user");
+      input.value = "";
+      input.focus();
+      
+      const lower = text.toLowerCase();
+      
+      // Help command
+      if (lower === "/help") {
+        appendMessage("AI: " + (strings[currentLang]?.commands || strings.en.commands), "bot");
+        return;
+      }
+      
+      // Device control commands
+      const deviceResponse = processDeviceCommand(lower);
+      if (deviceResponse) {
+        appendMessage("AI: " + deviceResponse, "bot");
+        return;
+      }
+      
+      // Definition commands
+      if (lower.startsWith("define ")) {
+        const word = lower.substring(7);
+        const meanings = {
+          "apple": "A round fruit with red or green skin and crisp flesh.",
+          "computer": "An electronic device for storing and processing data.",
+          "algorithm": "A process or set of rules to be followed in calculations.",
+          "network": "A group of interconnected computers or systems."
+        };
+        const meaning = meanings[word] || "I don't have a definition for that word yet.";
+        appendMessage("AI: " + word + ": " + meaning, "bot");
+        return;
+      }
+      
+      // Search commands
+      if (lower.startsWith("search ") || lower.startsWith("google ")) {
+        const query = text.replace(/^(search|google)\s+/i, '');
+        await handleSearch(query, currentLang);
+        return;
+      }
+      
+      // Media commands
+      if (lower.startsWith("play ") && lower.includes("youtube")) {
+        const query = text.replace(/play |on youtube/gi, '').trim();
+        appendMessage("AI: Playing " + query + " on YouTube...", "bot");
+        window.open(`https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`, '_blank');
+        return;
+      }
+      
+      if (lower.includes("spotify")) {
+        const query = text.replace(/play |on spotify/gi, '').trim();
+        appendMessage("AI: Playing " + query + " on Spotify...", "bot");
+        window.open(`https://open.spotify.com/search/${encodeURIComponent(query)}`, '_blank');
+        return;
+      }
+      
+      // Default response
+      const botReply = getLocalReply(lower);
+      appendMessage("AI: " + botReply, "bot");
+    }
+    
+    // Speech recognition
+    function startListening() {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) {
+        appendMessage("AI: Speech recognition is not supported by your browser.", "bot");
+        return;
+      }
+      
+      recognition = new SpeechRecognition();
+      recognition.lang = "en-US";
+      recognition.continuous = false;
+      recognition.interimResults = false;
+      
+      recognition.onstart = () => {
+        isListening = true;
+        document.getElementById("micBtn").classList.add("listening");
+        appendMessage("AI: Listening... Speak now", "system");
+      };
+      
+      recognition.onresult = (event) => {
+        const transcript = event.results[0][0].transcript;
+        document.getElementById("userInput").value = transcript;
+      };
+      
+      recognition.onend = () => {
+        isListening = false;
+        document.getElementById("micBtn").classList.remove("listening");
+        if (document.getElementById("userInput").value) {
+          sendMessage();
+        }
+      };
+      
+      recognition.onerror = (event) => {
+        appendMessage("AI: Error in speech recognition: " + event.error, "bot");
+        isListening = false;
+        document.getElementById("micBtn").classList.remove("listening");
+      };
+      
+      recognition.start();
+    }
+    
+    function stopListening() {
+      if (recognition) {
+        recognition.stop();
+      }
+      isListening = false;
+      document.getElementById("micBtn").classList.remove("listening");
+    }
+    
+    function toggleListening() {
+      if (isListening) {
+        stopListening();
+      } else {
+        startListening();
+      }
+    }
+    
+    // Initialize on load
+    window.onload = function() {
+      initSettings();
+      
+      // Set up enter key for sending messages
+      document.getElementById("userInput").addEventListener("keypress", function(e) {
+        if (e.key === "Enter") sendMessage();
+      });
+      
+      // Focus input field
+      document.getElementById("userInput").focus();
+    };
+  </script>
+</body>
+</html>
