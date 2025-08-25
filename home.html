@@ -867,41 +867,65 @@
       appendMessage("AI: Chat cleared. How can I assist you?", "bot");
     }
     
-    // Process commands
-    function processDeviceCommand(cmd) {
-      const actions = {
-        "wifi": {on: "Wi‑Fi turned on", off: "Wi‑Fi turned off"},
-        "wi-fi": {on: "Wi‑Fi turned on", off: "Wi‑Fi turned off"},
-        "bluetooth": {on: "Bluetooth turned on", off: "Bluetooth turned off"},
-        "data": {on: "Mobile data turned on", off: "Mobile data turned off"},
-        "mobile data": {on: "Mobile data turned on", off: "Mobile data turned off"},
-        "gps": {on: "GPS turned on", off: "GPS turned off"},
-        "nfc": {on: "NFC turned on", off: "NFC turned off"},
-        "hotspot": {on: "Hotspot turned on", off: "Hotspot turned off"},
-        "airplane mode": {on: "Airplane mode enabled", off: "Airplane mode disabled"},
-        "do not disturb": {on: "Do not disturb enabled", off: "Do not disturb disabled"},
-        "battery saver": {on: "Battery saver enabled", off: "Battery saver disabled"},
-        "flashlight": {on: "Flashlight turned on", off: "Flashlight turned off"},
-        "torch": {on: "Flashlight turned on", off: "Flashlight turned off"},
-        "auto brightness": {on: "Auto brightness enabled", off: "Auto brightness disabled"},
-        "vibrate": {on: "Vibrate mode enabled", off: "Vibrate mode disabled"},
-        "mute": {on: "Device muted", off: "Device unmuted"},
-        "volume up": {action: "Volume increased"},
-        "volume down": {action: "Volume decreased"},
-        "screen recorder": {action: "Screen recording started"},
-        "camera": {action: "Camera opened"},
-        "microphone": {action: "Microphone accessed"},
-        "lock screen": {action: "Screen locked"},
-        "unlock screen": {action: "Screen unlocked"},
-        "time": {action: "Current time: " + new Date().toLocaleTimeString()},
-        "what time is it": {action: "Current time: " + new Date().toLocaleTimeString()},
-        "check time": {action: "Current time: " + new Date().toLocaleTimeString()},
-        "date": {action: "Today's date: " + new Date().toLocaleDateString()},
-        "what date is it": {action: "Today's date: " + new Date().toLocaleDateString()},
-        "today's date": {action: "Today's date: " + new Date().toLocaleDateString()},
-        "current date": {action: "Today's date: " + new Date().toLocaleDateString()},
-        "cast screen": {action: "Screen casting enabled"}
-      };
+function processDeviceCommand(cmd) {
+  const actions = {
+    "wifi": {on: "Wi-Fi turned on", off: "Wi-Fi turned off"},
+    "wi-fi": {on: "Wi-Fi turned on", off: "Wi-Fi turned off"},
+    "bluetooth": {on: "Bluetooth turned on", off: "Bluetooth turned off"},
+    "data": {on: "Mobile data turned on", off: "Mobile data turned off"},
+    "mobile data": {on: "Mobile data turned on", off: "Mobile data turned off"},
+    "gps": {on: "GPS turned on", off: "GPS turned off"},
+    "nfc": {on: "NFC turned on", off: "NFC turned off"},
+    "hotspot": {on: "Hotspot turned on", off: "Hotspot turned off"},
+    "airplane mode": {on: "Airplane mode enabled", off: "Airplane mode disabled"},
+    "do not disturb": {on: "Do not disturb enabled", off: "Do not disturb disabled"},
+    "battery saver": {on: "Battery saver enabled", off: "Battery saver disabled"},
+    "flashlight": {on: "Flashlight turned on", off: "Flashlight turned off"},
+    "torch": {on: "Flashlight turned on", off: "Flashlight turned off"},
+    "auto brightness": {on: "Auto brightness enabled", off: "Auto brightness disabled"},
+    "vibrate": {on: "Vibrate mode enabled", off: "Vibrate mode disabled"},
+    "mute": {on: "Device muted", off: "Device unmuted"},
+    "volume up": {action: "Volume increased"},
+    "volume down": {action: "Volume decreased"},
+    "screen recorder": {action: "Screen recording started"},
+    "camera": {action: "Camera opened"},
+    "microphone": {action: "Microphone accessed"},
+    "lock screen": {action: "Screen locked"},
+    "unlock screen": {action: "Screen unlocked"},
+    "time": {action: "Current time: " + new Date().toLocaleTimeString()},
+    "what time is it": {action: "Current time: " + new Date().toLocaleTimeString()},
+    "check time": {action: "Current time: " + new Date().toLocaleTimeString()},
+    "date": {action: "Today's date: " + new Date().toLocaleDateString()},
+    "what date is it": {action: "Today's date: " + new Date().toLocaleDateString()},
+    "today's date": {action: "Today's date: " + new Date().toLocaleDateString()},
+    "current date": {action: "Today's date: " + new Date().toLocaleDateString()},
+    "cast screen": {action: "Screen casting enabled"}
+  };
+
+  for (const [key, actionObj] of Object.entries(actions)) {
+    if (cmd.includes(key)) {
+      if (actionObj.action) {
+        return actionObj.action;
+      }
+
+      if (cmd.includes("on")) {
+        toggleDevice(key.split(" ")[0], true);
+        return actionObj.on;
+      } else if (cmd.includes("off")) {
+        toggleDevice(key.split(" ")[0], false);
+        return actionObj.off;
+      }
+
+      // Toggle if no state specified
+      const device = key.split(" ")[0];
+      const newState = !deviceStatus[device];
+      toggleDevice(device, newState);
+      return newState ? actionObj.on : actionObj.off;
+    }
+  }
+  return "Sorry, I didn't understand that device command.";
+}
+
       
       for (const [key, actionObj] of Object.entries(actions)) {
         if (cmd.includes(key)) {
@@ -1197,3 +1221,4 @@
 
 </body>
 </html>
+
